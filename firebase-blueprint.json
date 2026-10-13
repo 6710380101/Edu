@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "users": {
+      "title": "UserProfile",
+      "description": "User profile and account status stored in Firestore using the Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 256 },
+        "photoURL": { "type": "string", "maxLength": 2048 },
+        "bio": { "type": "string", "maxLength": 1000 },
+        "role": { "type": "string", "enum": ["member", "moderator", "admin"] },
+        "accountStatus": { "type": "string", "enum": ["active", "suspended"] },
+        "emailVerified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "role", "accountStatus", "emailVerified"]
+    },
+    "admins": {
+      "title": "AdminRecord",
+      "description": "Trusted administrative record used by Firestore Security Rules to verify admin permissions.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "assignedAt": { "type": "string", "format": "date-time" },
+        "assignedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["uid", "email"]
+    },
+    "media": {
+      "title": "EducationalMedia",
+      "description": "Educational resource and media shared by educators and learners.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "categoryId": { "type": "string", "maxLength": 64 },
+        "categoryName": { "type": "string", "maxLength": 100 },
+        "educationLevel": { "type": "string", "maxLength": 100 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "mediaType": { "type": "string", "enum": ["document", "slide", "video", "link", "interactive"] },
+        "resourceUrl": { "type": "string", "maxLength": 2048 },
+        "thumbnailUrl": { "type": "string", "maxLength": 2048 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorEmail": { "type": "string", "maxLength": 256 },
+        "status": { "type": "string", "enum": ["published", "pending_approval", "hidden"] },
+        "likesCount": { "type": "number" },
+        "viewsCount": { "type": "number" },
+        "downloadsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "categoryId", "authorId", "status"]
+    },
+    "categories": {
+      "title": "MediaCategory",
+      "description": "Subject categories for educational media classification.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "color": { "type": "string", "maxLength": 50 },
+        "active": { "type": "boolean" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "active"]
+    },
+    "system_settings": {
+      "title": "SystemSetting",
+      "description": "Site-wide configuration manageable by administrators.",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "maxLength": 100 },
+        "siteDescription": { "type": "string", "maxLength": 1000 },
+        "logoUrl": { "type": "string", "maxLength": 2048 },
+        "contactEmail": { "type": "string", "maxLength": 256 },
+        "announcement": { "type": "string", "maxLength": 2000 },
+        "announcementEnabled": { "type": "boolean" },
+        "requireApproval": { "type": "boolean" },
+        "allowedFileTypes": { "type": "string", "maxLength": 500 },
+        "maxFileSizeMb": { "type": "number" },
+        "registrationEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "reports": {
+      "title": "ContentReport",
+      "description": "Reports submitted by users regarding inappropriate content.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "mediaId": { "type": "string", "maxLength": 128 },
+        "mediaTitle": { "type": "string", "maxLength": 200 },
+        "reportedByUid": { "type": "string", "maxLength": 128 },
+        "reportedByEmail": { "type": "string", "maxLength": 256 },
+        "reason": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["pending", "reviewed", "resolved", "dismissed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "format": "date-time" },
+        "resolvedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["mediaId", "reportedByUid", "reason", "status"]
+    },
+    "favorites": {
+      "title": "UserFavorite",
+      "description": "Bookmark reference linking a user to saved educational media.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "mediaId": { "type": "string", "maxLength": 128 },
+        "mediaTitle": { "type": "string", "maxLength": 200 },
+        "categoryName": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mediaId"]
+    },
+    "admin_logs": {
+      "title": "AdminAuditLog",
+      "description": "Audit trail of changes made by administrators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "action": { "type": "string", "maxLength": 100 },
+        "targetType": { "type": "string", "maxLength": 50 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 2000 },
+        "performedByUid": { "type": "string", "maxLength": 128 },
+        "performedByEmail": { "type": "string", "maxLength": 256 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["action", "performedByUid", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/users" },
+      "description": "User profile document keyed by auth UID."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/admins" },
+      "description": "Admin document indicating UID holds system administration privilege."
+    },
+    "/media/{mediaId}": {
+      "schema": { "$ref": "#/entities/media" },
+      "description": "Educational media items published or pending approval."
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/categories" },
+      "description": "Subject and topic categories."
+    },
+    "/system_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/system_settings" },
+      "description": "Website configuration settings."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/reports" },
+      "description": "Media violation reports for review by moderators or admins."
+    },
+    "/favorites/{favoriteId}": {
+      "schema": { "$ref": "#/entities/favorites" },
+      "description": "User bookmarked educational media references."
+    },
+    "/admin_logs/{logId}": {
+      "schema": { "$ref": "#/entities/admin_logs" },
+      "description": "Audit trail log records for administrative activities."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "EduShare - แพลตฟอร์มแบ่งปันสื่อการเรียนรู้",
+  "description": "แพลตฟอร์มแบ่งปันสื่อการเรียนรู้ที่ใช้งานได้จริง พร้อมระบบจัดการสมาชิก ระบบผู้ดูแล และคลังสื่อการสอน",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

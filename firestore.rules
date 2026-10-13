@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Bootstrapped owner/admin check from runtime environment
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email == 't.gan5140@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isModerator() {
+      return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator');
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow create: if (isBootstrappedAdmin() && request.auth.uid == adminId) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isModerator());
+      allow list: if isModerator();
+      
+      // User self-registration: must match UID, cannot self-assign elevated role unless bootstrapped admin
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && incoming().uid == request.auth.uid
+        && incoming().email is string && incoming().email.size() <= 256
+        && incoming().displayName is string && incoming().displayName.size() <= 100
+        && (incoming().role == 'member' || (incoming().role == 'admin' && isBootstrappedAdmin()))
+        && incoming().accountStatus == 'active';
+
+      // Updates: self cannot change role or accountStatus; Admin can change role/status
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          request.auth.uid == userId
+          && incoming().role == existing().role
+          && incoming().accountStatus == existing().accountStatus
+          && incoming().email == existing().email
+          && incoming().uid == existing().uid
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Educational Media Collection
+    match /media/{mediaId} {
+      allow get: if resource.data.status == 'published'
+        || (isSignedIn() && (resource.data.authorId == request.auth.uid || isModerator()));
+
+      allow list: if resource.data.status == 'published'
+        || (isSignedIn() && (resource.data.authorId == request.auth.uid || isModerator()));
+
+      allow create: if isSignedIn() && isValidId(mediaId)
+        && incoming().authorId == request.auth.uid
+        && incoming().title is string && incoming().title.size() <= 200
+        && incoming().description is string && incoming().description.size() <= 4000;
+
+      allow update: if isSignedIn() && (
+        isModerator()
+        || (
+          // Author updating their own media
+          existing().authorId == request.auth.uid
+          && incoming().authorId == existing().authorId
+          && incoming().title is string && incoming().title.size() <= 200
+        )
+        || (
+          // Metric counters: any signed in user can increment views/likes/downloads
+          incoming().diff(existing()).affectedKeys().hasOnly(['viewsCount', 'likesCount', 'downloadsCount', 'updatedAt'])
+        )
+      );
+
+      allow delete: if isSignedIn() && (isAdmin() || existing().authorId == request.auth.uid);
+    }
+
+    // Categories Collection
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // System Settings Collection
+    match /system_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Content Reports Collection
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && isValidId(reportId)
+        && incoming().reportedByUid == request.auth.uid
+        && incoming().reason is string && incoming().reason.size() <= 200;
+      allow read, update, delete: if isModerator();
+    }
+
+    // User Favorites Collection
+    match /favorites/{favoriteId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(favoriteId)
+        && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Admin Audit Logs Collection
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(logId)
+        && incoming().performedByUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}
